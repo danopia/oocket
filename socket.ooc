@@ -7,8 +7,8 @@ include netdb
 import os/FileDescriptor
 
 InAddr: cover from struct in_addr {
-    s_addr: extern ULong
-}// load with inet_aton()
+    s_addr: extern ULong // load with inet_aton()
+}
 
 SockAddr: cover from struct sockaddr {
     sa_family: extern UShort    // address family, AF_xxx
