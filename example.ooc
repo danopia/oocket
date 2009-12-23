@@ -1,6 +1,6 @@
 import socket
 
-sock := LineSocket new()
+sock := Socket new()
 sock connect("174.137.57.117", 6667)
 
 sock sendline("NICK asdf")

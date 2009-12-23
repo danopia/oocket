@@ -34,6 +34,8 @@ HostEntry: cover from struct hostent {
 AF_INET: extern Int
 SOCK_STREAM: extern Int
 
+SockLenT: cover from socklen_t
+
 socket: extern func (family, type, protocol: Int) -> Int
 
 gethostbyname: extern func (name: String) -> HostEntry
@@ -44,6 +46,10 @@ ntohl: extern func (netlong: UInt32) -> UInt32
 ntohs: extern func (netshort: UInt16) -> UInt16
 
 connect: extern func (socket: Int, address: SockAddr*, protocol: Int) -> Int
+
+bind: extern func (socket: Int, address: SockAddr*, address_len: Int) -> Int
+listen: extern func (socket, backlog: Int) -> Int
+accept: extern func (socket: Int, address: SockAddr*, address_len: SockLenT*) -> Int
 
 inet_addr: extern func (ip: String) -> ULong
 
@@ -56,6 +62,10 @@ Socket: class {
     this io = this descriptor
   }
   
+  init: func~fromfd(=descriptor) {
+    this io = this descriptor
+  }
+  
   /*connect: static func~classmethod (ip: String, port: Int) -> This {
     sock := This new()
     sock connect(ip, port)
@@ -64,19 +74,39 @@ Socket: class {
   
   connect: func(ip: String, port: Int) -> Bool {
     serv_addr: SockAddrIn
-
-    //server := gethostbyname(hostname) as HostEntry*
-    //if (server == null) {
-    //    "ERROR, no such host" println()
-    //    exit(0)
-    //}
-
+    
     memset(serv_addr&, 0, sizeof(serv_addr))
     serv_addr sin_family = AF_INET
     serv_addr sin_addr s_addr = inet_addr(ip) //server h_addr
     serv_addr sin_port = htons(port)
     
     connect(this descriptor, serv_addr& as SockAddr*, sizeof(serv_addr)) == 0
+  }
+  
+  listen: func(bindip: String, bindport: Int, backlog: Int) -> Bool {
+    serv_addr: SockAddrIn
+    
+    memset(serv_addr&, 0, sizeof(serv_addr))
+    serv_addr sin_family = AF_INET
+    serv_addr sin_addr s_addr = inet_addr(bindip) //server h_addr
+    serv_addr sin_port = htons(bindport)
+    
+    bind(this descriptor, serv_addr& as SockAddr*, sizeof(serv_addr))
+    listen(this descriptor, backlog)
+  }
+  
+  accept: func(client_addr: SockAddr) -> This {
+    addr_lenth := sizeof(client_addr)
+    
+    fd := accept(this descriptor, client_addr& as SockAddr*, addr_lenth& as Int*)
+    This new(fd)
+  }
+  
+  listen: func~nobacklog(bindip: String, bindport: Int) -> Bool {
+    this listen(bindip, bindport, 5)
+  }
+  listen: func~onlyport(bindport: Int) -> Bool {
+    this listen("0.0.0.0", bindport, 5)
   }
   
   recv: func(maxlen: Int) -> String {
@@ -86,9 +116,8 @@ Socket: class {
   send: func(data: String) -> Int {
     return io write(data, data length())
   }
-}
 
-LineSocket: class extends Socket {
+  // Line-socket stuff
   buffer := ""
   terminator := '\n'
   
