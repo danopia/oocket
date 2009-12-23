@@ -51,18 +51,16 @@ Socket: class {
   descriptor: Int
   io: FileDescriptor
   
-  terminator := '\n'
-  
   init: func() {
     this descriptor = socket(AF_INET, SOCK_STREAM, 0)
     this io = this descriptor
   }
   
-  connect: func(ip: String, port: Int) ~static static -> This {
+  /*connect: static func~classmethod (ip: String, port: Int) -> This {
     sock := This new()
     sock connect(ip, port)
     sock
-  }
+  }*/
   
   connect: func(ip: String, port: Int) -> Bool {
     serv_addr: SockAddrIn
@@ -89,3 +87,23 @@ Socket: class {
     return io write(data, data length())
   }
 }
+
+LineSocket: class extends Socket {
+  buffer := ""
+  terminator := '\n'
+  
+  sendline: func(data: String) -> Int {
+    send(data + terminator)
+  }
+  
+  recvline: func() -> String {
+    while (!( buffer contains(terminator) )) {
+      buffer = buffer append(recv(1024 - buffer length()))
+    }
+    
+    data := buffer substring(0, buffer indexOf(terminator))
+    buffer = buffer substring(data length() + 1)
+    return data
+  }
+}
+
