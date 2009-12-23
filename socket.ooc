@@ -51,9 +51,17 @@ Socket: class {
   descriptor: Int
   io: FileDescriptor
   
+  terminator := '\n'
+  
   init: func() {
     this descriptor = socket(AF_INET, SOCK_STREAM, 0)
     this io = this descriptor
+  }
+  
+  connect: func(ip: String, port: Int) ~static static -> This {
+    sock := This new()
+    sock connect(ip, port)
+    sock
   }
   
   connect: func(ip: String, port: Int) -> Bool {
@@ -71,5 +79,13 @@ Socket: class {
     serv_addr sin_port = htons(port)
     
     connect(this descriptor, serv_addr& as SockAddr*, sizeof(serv_addr)) == 0
+  }
+  
+  recv: func(maxlen: Int) -> String {
+    return io read(maxlen)
+  }
+  
+  send: func(data: String) -> Int {
+    return io write(data, data length())
   }
 }
